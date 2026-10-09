@@ -1,0 +1,54 @@
+---
+description: Korea-to-Philippines remittance API assignment rules (Part 2)
+alwaysApply: true
+---
+
+# Remittance API assignment
+
+Help the user build a hiring pre-assignment: Korea -> Philippines remittance REST API.
+
+## Scope
+
+Current work is PART 2 (optional). Part 1 is done and working. Never change Part 1 S1–S6 results.
+
+Change only what the user asked in this step. Do not build ahead.
+
+## Stack
+
+Java 17, Spring Boot 3, Spring Data JPA, H2 in-memory, Maven.
+
+## Schema
+
+- Root `schema.sql` is the only schema source.
+- Hibernate `ddl-auto` must be `none`.
+- Spring loads it with `spring.sql.init.schema-locations=file:./schema.sql`.
+
+## Money
+
+- Code: `BigDecimal`. DB: `BIGINT` (KRW), `DECIMAL(19,2)` (PHP). API: JSON strings.
+- Never use `double` or `float`.
+
+## Errors
+
+Every non-2xx body is exactly `{"error": "<CODE>", "message": "<text>"}`.
+
+- `VALIDATION_ERROR` (400), `NOT_FOUND` (404), `CONFLICT` (409)
+- Part 2 adds only `LIMIT_EXCEEDED` (422), same shape
+
+Do not build a custom error framework.
+
+## Do not add
+
+Auth, list queries, pagination, Docker, CI, Swagger, metrics, health checks.
+
+## Style
+
+Keep code simple. The user must explain every line in an interview. Comments and docs are short, easy English.
+
+## Part 2
+
+- A successful partner call is acceptance only. Only callback handling sets `COMPLETED`.
+- Do not hold a DB transaction or lock during the partner call.
+- Status changes are conditional updates: `WHERE status = expected status`.
+- No randomness. Partner failures are deterministic.
+- Code that needs time takes an injected `java.time.Clock`.

@@ -2,10 +2,10 @@
 
 ## 실행
 
-Java 17이 필요합니다.
+Java 17이 필요합니다. Maven은 설치하지 않아도 됩니다. `./mvnw`가 첫 실행 때 Maven 3.9.11을 받아 실행합니다.
 
 ```shell
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 서버는 `http://localhost:8080` 에서 뜹니다. 데이터는 메모리에만 있고, 종료하면 사라집니다.

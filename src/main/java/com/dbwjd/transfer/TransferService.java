@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HexFormat;
@@ -22,24 +22,32 @@ public class TransferService {
     private final TransferCalculator calculator;
     private final TransferRepository transfers;
     private final TransferInserter inserter;
+    private final Clock clock;
 
     public TransferService(CustomerLookup customerLookup,
                            TransferRepository transfers,
-                           TransferInserter inserter) {
+                           TransferInserter inserter,
+                           Clock clock) {
         this.validator = new TransferRequestValidator(customerLookup);
         this.calculator = new TransferCalculator();
         this.transfers = transfers;
         this.inserter = inserter;
+        this.clock = clock;
     }
 
+    // 1. Validate the body (400).
+    // 2. Check the Idempotency-Key header.
+    // 3. Lock the customer row.
+    // 4. Replay the same key, or reject a different body (409). A replay skips the limit.
+    // 5. Enforce the daily limit (422), then insert.
     public TransferResponse create(String idempotencyKey, CreateTransferRequest request) {
-        requireIdempotencyKey(idempotencyKey);
         BigDecimal sendAmount = validator.validate(request);
+        requireIdempotencyKey(idempotencyKey);
         String requestHash = requestHash(request, sendAmount);
 
         try {
-            Transfer saved = inserter.insert(request, sendAmount, calculator.calculate(sendAmount), idempotencyKey, requestHash);
-            return TransferResponse.from(saved);
+            return inserter.create(
+                    request, sendAmount, calculator.calculate(sendAmount), idempotencyKey, requestHash);
         } catch (DataIntegrityViolationException ignored) {
             // The insert rolled back. Re-read to see which unique key lost.
             return replay(request.getCustomerId(), idempotencyKey, requestHash);
@@ -63,7 +71,7 @@ public class TransferService {
 
     @Transactional
     public TransferResponse cancel(String transferId) {
-        LocalDateTime now = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
         int updated = transfers.cancelIfRequested(
                 transferId, TransferStatus.CANCELLED, TransferStatus.REQUESTED, now);
         if (updated == 1) {

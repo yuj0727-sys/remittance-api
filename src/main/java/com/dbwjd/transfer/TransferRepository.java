@@ -5,12 +5,29 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface TransferRepository extends JpaRepository<Transfer, String> {
 
     Optional<Transfer> findByCustomerIdAndIdempotencyKey(String customerId, String idempotencyKey);
+
+    // Today's active send amount. Cancelled and failed rows are not included.
+    @Query("""
+            SELECT SUM(t.sendAmount)
+            FROM Transfer t
+            WHERE t.customerId = :customerId
+              AND t.status <> :cancelled
+              AND t.status <> :failed
+              AND t.createdAt >= :start
+              AND t.createdAt < :end
+            """)
+    BigDecimal sumActiveSendAmount(@Param("customerId") String customerId,
+                                   @Param("cancelled") TransferStatus cancelled,
+                                   @Param("failed") TransferStatus failed,
+                                   @Param("start") LocalDateTime start,
+                                   @Param("end") LocalDateTime end);
 
     // One update. A row changes only while it is still REQUESTED.
     @Modifying(clearAutomatically = true)

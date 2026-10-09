@@ -28,6 +28,11 @@ public class ApiExceptionHandler {
         return error(HttpStatus.CONFLICT, "CONFLICT", exception.getMessage());
     }
 
+    @ExceptionHandler(LimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handleLimit(LimitExceededException exception) {
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, "LIMIT_EXCEEDED", exception.getMessage());
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleBadJson(HttpMessageNotReadableException exception) {
         Throwable cause = exception.getMostSpecificCause();

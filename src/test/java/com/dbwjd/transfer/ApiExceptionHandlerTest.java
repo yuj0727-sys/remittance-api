@@ -37,6 +37,14 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    void mapsLimitExceededExceptionTo422() throws Exception {
+        ResponseEntity<ErrorResponse> response = handler.handleLimit(
+                new LimitExceededException("daily limit of 3000000 KRW exceeded"));
+
+        assertBody(response, 422, "LIMIT_EXCEEDED", "daily limit of 3000000 KRW exceeded");
+    }
+
+    @Test
     void mapsBrokenJsonTo400() throws Exception {
         ResponseEntity<ErrorResponse> response = handler.handleBadJson(
                 new HttpMessageNotReadableException("bad json"));

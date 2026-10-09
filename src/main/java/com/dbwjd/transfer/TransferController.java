@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class TransferController {
 
     private final TransferService transferService;
+    private final TransferSendService transferSendService;
 
-    public TransferController(TransferService transferService) {
+    public TransferController(TransferService transferService, TransferSendService transferSendService) {
         this.transferService = transferService;
+        this.transferSendService = transferSendService;
     }
 
     @PostMapping
@@ -35,5 +37,10 @@ public class TransferController {
     @PostMapping("/{transferId}/cancel")
     public TransferResponse cancel(@PathVariable String transferId) {
         return transferService.cancel(transferId);
+    }
+
+    @PostMapping("/{transferId}/send")
+    public TransferResponse send(@PathVariable String transferId) {
+        return transferSendService.send(transferId);
     }
 }

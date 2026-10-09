@@ -2,11 +2,15 @@ package com.dbwjd.transfer;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HexFormat;
 
 @Service
@@ -52,6 +56,30 @@ public class TransferService {
             return TransferResponse.from(existing);
         }
         throw new ConflictException("Idempotency-Key was already used with a different request");
+    }
+
+    public TransferResponse get(String transferId) {
+        return transfers.findById(transferId)
+                .map(TransferResponse::from)
+                .orElseThrow(() -> new NotFoundException("transfer not found"));
+    }
+
+    @Transactional
+    public TransferResponse cancel(String transferId) {
+        LocalDateTime now = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        int updated = transfers.cancelIfRequested(
+                transferId, TransferStatus.CANCELLED, TransferStatus.REQUESTED, now);
+        if (updated == 1) {
+            return transfers.findById(transferId).map(TransferResponse::from).orElseThrow();
+        }
+
+        Transfer existing = transfers.findById(transferId)
+                .orElseThrow(() -> new NotFoundException("transfer not found"));
+        if (!existing.getStatus().canTransitionTo(TransferStatus.CANCELLED)) {
+            throw new ConflictException("cannot cancel transfer in status " + existing.getStatus());
+        }
+        // The update lost. Another request already left REQUESTED.
+        throw new ConflictException("cannot cancel transfer in status " + existing.getStatus());
     }
 
     private void requireIdempotencyKey(String idempotencyKey) {

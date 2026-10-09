@@ -2,6 +2,8 @@ package com.dbwjd.transfer;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -23,5 +25,15 @@ public class TransferController {
             @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody CreateTransferRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(transferService.create(idempotencyKey, request));
+    }
+
+    @GetMapping("/{transferId}")
+    public TransferResponse get(@PathVariable String transferId) {
+        return transferService.get(transferId);
+    }
+
+    @PostMapping("/{transferId}/cancel")
+    public TransferResponse cancel(@PathVariable String transferId) {
+        return transferService.cancel(transferId);
     }
 }

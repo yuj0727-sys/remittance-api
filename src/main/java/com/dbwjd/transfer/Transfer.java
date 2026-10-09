@@ -1,4 +1,4 @@
-package com.finshot.transfer;
+package com.dbwjd.transfer;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

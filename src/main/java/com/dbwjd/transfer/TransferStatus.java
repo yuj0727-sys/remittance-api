@@ -1,4 +1,4 @@
-package com.finshot.transfer;
+package com.dbwjd.transfer;
 
 public enum TransferStatus {
     REQUESTED,

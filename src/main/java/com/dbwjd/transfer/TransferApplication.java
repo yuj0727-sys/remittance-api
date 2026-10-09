@@ -1,4 +1,4 @@
-package com.finshot.transfer;
+package com.dbwjd.transfer;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

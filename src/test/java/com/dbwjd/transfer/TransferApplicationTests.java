@@ -1,4 +1,4 @@
-package com.finshot.transfer;
+package com.dbwjd.transfer;
 
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;

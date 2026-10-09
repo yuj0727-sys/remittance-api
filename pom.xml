@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.finshot</groupId>
+    <groupId>com.dbwjd</groupId>
     <artifactId>remittance-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>transfer</name>

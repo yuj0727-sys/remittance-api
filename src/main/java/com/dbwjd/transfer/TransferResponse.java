@@ -14,7 +14,9 @@ public record TransferResponse(
         String customerId,
         String sendCurrency,
         String receiveCurrency,
-        String recipientName) {
+        String recipientName,
+        String partnerRef,
+        String failureReason) {
 
     // Uses the saved row. Fee and receive amount are not calculated again.
     public static TransferResponse from(Transfer transfer) {
@@ -30,6 +32,8 @@ public record TransferResponse(
                 transfer.getCustomerId(),
                 transfer.getSendCurrency(),
                 transfer.getReceiveCurrency(),
-                transfer.getRecipientName());
+                transfer.getRecipientName(),
+                transfer.getPartnerRef(),
+                transfer.getFailureReason());
     }
 }

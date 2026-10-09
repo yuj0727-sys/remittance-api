@@ -51,7 +51,9 @@ class TransferApplicationTests {
                 "Juan",
                 TransferStatus.REQUESTED,
                 now,
-                now
+                now,
+                "PR-11111111-1111-1111-1111-111111111111",
+                null
         );
 
         transferRepository.save(transfer);

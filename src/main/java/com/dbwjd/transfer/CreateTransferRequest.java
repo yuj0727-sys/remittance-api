@@ -9,6 +9,7 @@ public class CreateTransferRequest {
     private String sendAmount;
     private String receiveCurrency;
     private String recipientName;
+    private String partnerRef;
 
     public static CreateTransferRequest of(String customerId,
                                            String sendCurrency,
@@ -63,5 +64,13 @@ public class CreateTransferRequest {
 
     public void setRecipientName(String recipientName) {
         this.recipientName = recipientName;
+    }
+
+    public String getPartnerRef() {
+        return partnerRef;
+    }
+
+    public void setPartnerRef(String partnerRef) {
+        this.partnerRef = partnerRef;
     }
 }

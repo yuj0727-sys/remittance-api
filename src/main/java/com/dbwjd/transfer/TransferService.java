@@ -40,18 +40,15 @@ public class TransferService {
         try {
             Transfer saved = inserter.insert(request, sendAmount, calculator.calculate(sendAmount), idempotencyKey, requestHash);
             return TransferResponse.from(saved);
-        } catch (DataIntegrityViolationException exception) {
-            // UNIQUE (customer_id, idempotency_key) rolled the loser back. Read the winner in a new transaction.
-            return replay(request.getCustomerId(), idempotencyKey, requestHash, exception);
+        } catch (DataIntegrityViolationException ignored) {
+            // The insert rolled back. Re-read to see which unique key lost.
+            return replay(request.getCustomerId(), idempotencyKey, requestHash);
         }
     }
 
-    private TransferResponse replay(String customerId,
-                                    String idempotencyKey,
-                                    String requestHash,
-                                    DataIntegrityViolationException exception) {
+    private TransferResponse replay(String customerId, String idempotencyKey, String requestHash) {
         Transfer existing = transfers.findByCustomerIdAndIdempotencyKey(customerId, idempotencyKey)
-                .orElseThrow(() -> exception);
+                .orElseThrow(() -> new ConflictException("partnerRef already used"));
         if (existing.getRequestHash().equals(requestHash)) {
             return TransferResponse.from(existing);
         }
@@ -89,12 +86,15 @@ public class TransferService {
     }
 
     // Parsed sendAmount text, so "500000" and 500000 share one hash.
+    // partnerRef is only the client value. Missing means empty. Never hash a generated id.
     private String requestHash(CreateTransferRequest request, BigDecimal sendAmount) {
+        String partnerRef = request.getPartnerRef() == null ? "" : request.getPartnerRef();
         String normalized = request.getCustomerId()
                 + "|" + request.getSendCurrency()
                 + "|" + sendAmount.toPlainString()
                 + "|" + request.getReceiveCurrency()
-                + "|" + request.getRecipientName();
+                + "|" + request.getRecipientName()
+                + "|" + partnerRef;
         try {
             byte[] hash = MessageDigest.getInstance("SHA-256")
                     .digest(normalized.getBytes(StandardCharsets.UTF_8));

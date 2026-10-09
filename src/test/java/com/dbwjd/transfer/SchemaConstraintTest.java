@@ -138,8 +138,9 @@ class SchemaConstraintTest {
                     transfer_id, customer_id, idempotency_key, request_hash,
                     send_currency, receive_currency,
                     send_amount, fee, total_debit, receive_amount,
-                    recipient_name, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    recipient_name, status, created_at, updated_at,
+                    partner_ref, failure_reason
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
                 """,
                 transferId,
                 customerId,
@@ -154,6 +155,7 @@ class SchemaConstraintTest {
                 "Juan",
                 status,
                 LocalDateTime.of(2026, 10, 9, 9, 0),
-                LocalDateTime.of(2026, 10, 9, 9, 0));
+                LocalDateTime.of(2026, 10, 9, 9, 0),
+                transferId);
     }
 }

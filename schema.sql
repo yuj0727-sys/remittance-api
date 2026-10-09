@@ -16,6 +16,8 @@ CREATE TABLE transfers (
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    partner_ref VARCHAR(64) NOT NULL,
+    failure_reason VARCHAR(200) NULL,
     -- Stops two transfers from sharing the same id.
     CONSTRAINT pk_transfers PRIMARY KEY (transfer_id),
     -- Stops a transfer for a customer that does not exist.
@@ -29,8 +31,17 @@ CREATE TABLE transfers (
     -- Stops a total debit that is not send amount plus fee.
     CONSTRAINT ck_transfers_total_debit CHECK (total_debit = send_amount + fee),
     -- Stops a status outside REQUESTED, SENDING, COMPLETED, FAILED, CANCELLED.
-    CONSTRAINT ck_transfers_status CHECK (status IN ('REQUESTED', 'SENDING', 'COMPLETED', 'FAILED', 'CANCELLED'))
+    CONSTRAINT ck_transfers_status CHECK (status IN ('REQUESTED', 'SENDING', 'COMPLETED', 'FAILED', 'CANCELLED')),
+    -- Stops two transfers from using the same partner reference.
+    CONSTRAINT uk_transfers_partner_ref UNIQUE (partner_ref)
 );
 
 -- Stops a slow full scan when a later daily limit is checked by customer and time.
 CREATE INDEX idx_transfers_customer_created_at ON transfers (customer_id, created_at);
+
+CREATE TABLE callback_events (
+    -- Stops the same callback event from being stored twice.
+    event_id VARCHAR(64) PRIMARY KEY,
+    partner_ref VARCHAR(64) NOT NULL,
+    received_at TIMESTAMP NOT NULL
+);

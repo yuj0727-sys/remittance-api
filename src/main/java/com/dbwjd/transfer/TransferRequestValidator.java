@@ -9,6 +9,7 @@ public final class TransferRequestValidator {
     // Digits only. Rejects a sign, decimal point, exponent, space, or leading zero.
     private static final Pattern POSITIVE_WHOLE_NUMBER = Pattern.compile("[1-9][0-9]*");
     private static final int MAX_RECIPIENT_NAME_LENGTH = 100;
+    private static final Pattern PARTNER_REF = Pattern.compile("[A-Za-z0-9_-]{1,64}");
 
     private final CustomerLookup customerLookup;
 
@@ -41,6 +42,10 @@ public final class TransferRequestValidator {
         }
         if (!request.getReceiveCurrency().equals("PHP")) {
             throw new ValidationException("receiveCurrency must be PHP");
+        }
+
+        if (request.getPartnerRef() != null && !PARTNER_REF.matcher(request.getPartnerRef()).matches()) {
+            throw new ValidationException("partnerRef must be 1 to 64 letters, digits, underscores, or hyphens");
         }
 
         if (!customerLookup.exists(request.getCustomerId())) {

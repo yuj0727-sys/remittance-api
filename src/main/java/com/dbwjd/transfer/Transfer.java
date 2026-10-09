@@ -59,6 +59,12 @@ public class Transfer {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "partner_ref", length = 64, nullable = false)
+    private String partnerRef;
+
+    @Column(name = "failure_reason", length = 200)
+    private String failureReason;
+
     // Required by JPA.
     protected Transfer() {
     }
@@ -76,7 +82,9 @@ public class Transfer {
                     String recipientName,
                     TransferStatus status,
                     LocalDateTime createdAt,
-                    LocalDateTime updatedAt) {
+                    LocalDateTime updatedAt,
+                    String partnerRef,
+                    String failureReason) {
         this.transferId = transferId;
         this.customerId = customerId;
         this.idempotencyKey = idempotencyKey;
@@ -91,6 +99,8 @@ public class Transfer {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.partnerRef = partnerRef;
+        this.failureReason = failureReason;
     }
 
     public String getTransferId() {
@@ -147,5 +157,13 @@ public class Transfer {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getPartnerRef() {
+        return partnerRef;
+    }
+
+    public String getFailureReason() {
+        return failureReason;
     }
 }

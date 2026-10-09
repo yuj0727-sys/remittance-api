@@ -20,7 +20,7 @@ CREATE TABLE transfers (
     CONSTRAINT pk_transfers PRIMARY KEY (transfer_id),
     -- Stops a transfer for a customer that does not exist.
     CONSTRAINT fk_transfers_customer FOREIGN KEY (customer_id) REFERENCES customers (customer_id),
-    -- Stops one customer from reusing the same idempotency key.
+    -- One customer can store an idempotency key only once. A concurrent insert race is settled here.
     CONSTRAINT uk_transfers_customer_idempotency UNIQUE (customer_id, idempotency_key),
     -- Stops a send amount below 10000 KRW.
     CONSTRAINT ck_transfers_send_amount CHECK (send_amount >= 10000),

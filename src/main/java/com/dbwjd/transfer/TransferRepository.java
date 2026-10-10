@@ -13,6 +13,8 @@ public interface TransferRepository extends JpaRepository<Transfer, String> {
 
     Optional<Transfer> findByCustomerIdAndIdempotencyKey(String customerId, String idempotencyKey);
 
+    Optional<Transfer> findByPartnerRef(String partnerRef);
+
     // Today's active send amount. Cancelled and failed rows are not included.
     @Query("""
             SELECT SUM(t.sendAmount)
@@ -65,4 +67,16 @@ public interface TransferRepository extends JpaRepository<Transfer, String> {
                             @Param("failureReason") String failureReason,
                             @Param("sending") TransferStatus sending,
                             @Param("updatedAt") LocalDateTime updatedAt);
+
+    // One update. A row changes only while it is still SENDING.
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            UPDATE Transfer t
+            SET t.status = :completed, t.updatedAt = :updatedAt
+            WHERE t.transferId = :transferId AND t.status = :sending
+            """)
+    int completeIfSending(@Param("transferId") String transferId,
+                          @Param("completed") TransferStatus completed,
+                          @Param("sending") TransferStatus sending,
+                          @Param("updatedAt") LocalDateTime updatedAt);
 }

@@ -1,24 +1,24 @@
-# 한국에서 필리핀으로 보내는 송금 API
+# Remittance API from Korea to the Philippines
 
-## 실행
+## Run
 
-Java 17이 필요합니다. Maven은 설치하지 않아도 됩니다. `./mvnw`가 첫 실행 때 Maven 3.9.11을 받아 실행합니다.
+Java 17 is required. You do not need to install Maven. `./mvnw` downloads Maven 3.9.11 on the first run.
 
 ```shell
 ./mvnw spring-boot:run
 ```
 
-서버는 `http://localhost:8080` 에서 뜹니다. 데이터는 메모리에만 있고, 종료하면 사라집니다.
+The server listens on `http://localhost:8080`. Data stays in memory and is gone when the process stops.
 
-## 스택
+## Stack
 
-Java 17, Spring Boot 3, Spring Data JPA, H2 인메모리입니다.
+Java 17, Spring Boot 3, Spring Data JPA, and H2 in memory.
 
-## 생성 요청을 안전하게 재시도하기
+## Retry a create safely
 
-헤더 이름은 `Idempotency-Key`입니다. 값은 클라이언트가 만듭니다. UUID v4를 사용자 행동 1회당 하나 만들고, 같은 행동을 다시 보낼 때는 그 값을 그대로 씁니다.
+The header name is `Idempotency-Key`. The client creates the value. Make one UUID v4 for each user action, and send that same value again when you retry the action.
 
-헤더가 없거나 비어 있거나 64자를 넘으면 400입니다. 같은 키와 같은 본문이면 새 송금을 만들지 않고 원래 송금을 201로 돌려줍니다. 같은 키에 본문만 다르면 409입니다.
+A missing, blank, or longer-than-64 header is 400. The same key and the same body do not create a new transfer. They return the original transfer with 201. The same key with a different body is 409.
 
 ```shell
 curl -i -X POST http://localhost:8080/api/transfers \
@@ -27,26 +27,49 @@ curl -i -X POST http://localhost:8080/api/transfers \
   -d '{"customerId":"C001","sendCurrency":"KRW","sendAmount":"500000","receiveCurrency":"PHP","recipientName":"Juan"}'
 ```
 
+## Optional partnerRef
 
+`partnerRef` on create is optional. If you send it, it must be 1 to 64 letters, digits, underscores, or hyphens. Anything else is 400. If you omit it, the server stores `PR-` plus a UUID. The value you send is part of the idempotency hash. The generated value is not.
 
-## AI 도구
+`partner_ref` is unique. The same key and the same body return the original transfer. Another transfer that reuses the same `partnerRef` gets 409 `partnerRef already used`.
 
-- **Claude:** 구현 및 테스트 작업을 위한 프롬프트 작성
-- **Cursor:** 프롬프트를 바탕으로 기능 구현 및 테스트 코드 작성
-- **ChatGPT:** 이해가 부족한 기술 개념과 코드 동작 원리 확인
+## Send
 
+Create does not call the partner. `POST /api/transfers/{transferId}/send` starts it. The row moves from `REQUESTED` to `SENDING`, then the partner is called up to 3 times. `ACCEPTED` means the partner got the request. The status stays `SENDING` until a callback sets `COMPLETED`. Three failures set `FAILED` and `failureReason` to `partner failed 3 times`.
 
+```shell
+curl -i -X POST http://localhost:8080/api/transfers/TRANSFER_ID/send
+```
 
-## 가정
+## Partner callback
 
-- `Idempotency-Key`는 필수입니다.
-- 같은 키의 범위는 `customerId` 단위입니다. 다른 고객은 같은 키를 쓸 수 있습니다.
-- 같은 요청을 다시 보내도 201과 원래 본문을 돌려줍니다.
-- `sendAmount`는 JSON 문자열이나 JSON 정수를 허용합니다. `1.5` 같은 JSON 소수는 거절합니다.
-- 본문 검증이 멱등성 조회보다 먼저입니다. 잘못된 본문은 기존 키를 찾지 않습니다.
+`POST /api/callbacks/partner` needs `partnerRef`, `eventId`, and `status`. `status` must be `COMPLETED`. The same `eventId` for the same `partnerRef` returns 200 and does not change the transfer.
 
+```shell
+curl -i -X POST http://localhost:8080/api/callbacks/partner \
+  -H 'Content-Type: application/json' \
+  -d '{"partnerRef":"OK_REF","eventId":"event-1","status":"COMPLETED"}'
+```
 
+## AI tools
 
-## 구현하지 않은 것
+- **Claude:** Wrote prompts for the implementation and test work
+- **Cursor:** Implemented the features and test code from those prompts
+- **ChatGPT:** Checked technical ideas and how the code works when something was unclear
 
-Part 2는 없습니다. 파트너 호출, 일일 한도, 콜백은 구현하지 않았습니다. 인증, 송금 목록 조회, 페이지네이션도 없습니다.
+## Assumptions
+
+- `Idempotency-Key` is required.
+- A key is scoped by `customerId`. Another customer may use the same key.
+- A retry of the same request returns 201 and the original body.
+- `sendAmount` may be a JSON string or a JSON integer. A JSON decimal such as `1.5` is rejected.
+- Body validation runs before the idempotency lookup. A bad body does not look up an existing key.
+- Sending starts at `POST /api/transfers/{id}/send`. Create does not call the partner. An automatic call on create would leave the row past `REQUESTED`, and cancel scenario S4 would fail.
+- The daily limit sums `sendAmount` only. The fee is not included. A Seoul-day sum of exactly 3000000 KRW is allowed. `CANCELLED` and `FAILED` rows are not counted.
+- The same callback `eventId` for the same `partnerRef` returns 200. The transfer is not updated again.
+- Partner success or failure is fixed by `partnerRef`: `abs(hashCode) % 10 < 3` fails. Three tries cannot change that result.
+- Each partner try is written only to the log (`partner attempt ...`). There is no attempt table. `failure_reason` stores text only when the transfer becomes `FAILED`.
+
+## Not implemented
+
+There is no authentication, no transfer list, and no pagination. The partner client does not call a remote server. A callback that arrives while the transfer is still `REQUESTED` returns 409, and that event is not stored. The partner must retry the same callback after the transfer is `SENDING`.

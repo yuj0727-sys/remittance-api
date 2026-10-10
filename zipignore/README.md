@@ -35,7 +35,7 @@ curl -i -X POST http://localhost:8080/api/transfers \
 
 ## 전송
 
-생성만으로는 파트너를 호출하지 않습니다. `POST /api/transfers/{transferId}/send`가 전송을 시작합니다. 행은 `REQUESTED`에서 `SENDING`으로 바뀌고, 파트너를 최대 3번 호출합니다. `ACCEPTED`는 파트너가 요청을 받았다는 뜻입니다. 콜백이 `COMPLETED`로 바꾸기 전까지 상태는 `SENDING`입니다. 세 번 실패하면 `FAILED`가 되고 `failureReason`은 `partner failed 3 times`입니다.
+생성만으로는 파트너를 호출하지 않습니다. `POST /api/transfers/{transferId}/send`가 전송을 시작합니다. 행은 `REQUESTED`에서 `SENDING`으로 바뀌고, 파트너를 최대 3번 호출합니다. `ACCEPTED`는 파트너가 요청을 받았다는 뜻입니다. 콜백이 `COMPLETED`로 바꾸기 전까지 상태는 `SENDING`입니다. 세 번 실패하면 `FAILED`가 되고 `failureReason`은 `partner failed 3 times`입니다. `S9FAIL`은 실패합니다. `S8OK`와 `OK_REF`는 성공합니다.
 
 ```shell
 curl -i -X POST http://localhost:8080/api/transfers/TRANSFER_ID/send
@@ -67,7 +67,7 @@ curl -i -X POST http://localhost:8080/api/callbacks/partner \
 - 전송은 `POST /api/transfers/{id}/send`에서 시작합니다. 생성 때 파트너를 호출하지 않습니다. 생성 때 바로 호출하면 행이 `REQUESTED`를 지나가고, 취소 시나리오 S4가 실패합니다.
 - 일일 한도는 `sendAmount` 합계만 봅니다. 수수료는 포함하지 않습니다. 서울 날짜 기준으로 정확히 3000000 KRW는 허용합니다. `CANCELLED`와 `FAILED`는 합계에서 뺍니다.
 - 같은 `partnerRef`에 같은 콜백 `eventId`를 다시 보내면 200입니다. 송금은 다시 갱신하지 않습니다.
-- 파트너 성공과 실패는 `partnerRef`로 정해집니다. `abs(hashCode) % 10 < 3`이면 실패입니다. 세 번 다시 시도해도 결과는 바뀌지 않습니다.
+- 파트너 성공과 실패는 `partnerRef`로 정해집니다. `abs(hashCode) % 10 < 3`이면 실패입니다. 세 번 다시 시도해도 결과는 바뀌지 않습니다. `S9FAIL`은 실패합니다. `S8OK`와 `OK_REF`는 성공합니다.
 - 파트너 호출 한 번은 로그에만 남습니다 (`partner attempt ...`). 시도 이력 테이블은 없습니다. `failure_reason`은 송금이 `FAILED`가 될 때만 글자를 저장합니다.
 
 ## 구현하지 않은 것

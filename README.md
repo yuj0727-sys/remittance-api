@@ -35,7 +35,7 @@ curl -i -X POST http://localhost:8080/api/transfers \
 
 ## Send
 
-Create does not call the partner. `POST /api/transfers/{transferId}/send` starts it. The row moves from `REQUESTED` to `SENDING`, then the partner is called up to 3 times. `ACCEPTED` means the partner got the request. The status stays `SENDING` until a callback sets `COMPLETED`. Three failures set `FAILED` and `failureReason` to `partner failed 3 times`.
+Create does not call the partner. `POST /api/transfers/{transferId}/send` starts it. The row moves from `REQUESTED` to `SENDING`, then the partner is called up to 3 times. `ACCEPTED` means the partner got the request. The status stays `SENDING` until a callback sets `COMPLETED`. Three failures set `FAILED` and `failureReason` to `partner failed 3 times`. `S9FAIL` fails. `S8OK` and `OK_REF` succeed.
 
 ```shell
 curl -i -X POST http://localhost:8080/api/transfers/TRANSFER_ID/send
@@ -67,7 +67,7 @@ curl -i -X POST http://localhost:8080/api/callbacks/partner \
 - Sending starts at `POST /api/transfers/{id}/send`. Create does not call the partner. An automatic call on create would leave the row past `REQUESTED`, and cancel scenario S4 would fail.
 - The daily limit sums `sendAmount` only. The fee is not included. A Seoul-day sum of exactly 3000000 KRW is allowed. `CANCELLED` and `FAILED` rows are not counted.
 - The same callback `eventId` for the same `partnerRef` returns 200. The transfer is not updated again.
-- Partner success or failure is fixed by `partnerRef`: `abs(hashCode) % 10 < 3` fails. Three tries cannot change that result.
+- Partner success or failure is fixed by `partnerRef`: `abs(hashCode) % 10 < 3` fails. Three tries cannot change that result. `S9FAIL` fails. `S8OK` and `OK_REF` succeed.
 - Each partner try is written only to the log (`partner attempt ...`). There is no attempt table. `failure_reason` stores text only when the transfer becomes `FAILED`.
 
 ## Not implemented
